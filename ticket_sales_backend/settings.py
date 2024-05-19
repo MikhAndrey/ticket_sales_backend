@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
+from datetime import timedelta
+
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -39,23 +41,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'chat',
-    'chat_member',
-    'chat_message',
-    'city',
-    'event',
-    'event_place',
-    'event_request',
-    'feedback',
-    'hall',
-    'photo',
-    'place',
-    'promotion',
-    'promotion_event',
-    'purchase',
-    'stadium',
-    'user',
-    'video'
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'core',
+    'messenger'
 ]
 
 MIDDLEWARE = [
@@ -87,7 +77,25 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'ticket_sales_backend.wsgi.application'
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=float(os.getenv('ACCESS_TOKEN_LIFETIME'))),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=float(os.getenv('REFRESH_TOKEN_LIFETIME'))),
+    "ROTATE_REFRESH_TOKENS": os.getenv('ROTATE_REFRESH_TOKENS'),
+    "BLACKLIST_AFTER_ROTATION": os.getenv('BLACKLIST_AFTER_ROTATION'),
+    "UPDATE_LAST_LOGIN": os.getenv('UPDATE_LAST_LOGIN'),
+    "ALGORITHM": os.getenv('ALGORITHM'),
+    "SIGNING_KEY": os.getenv('SIGNING_KEY'),
+    "AUDIENCE": os.getenv('AUDIENCE'),
+    "ISSUER": os.getenv('ISSUER'),
+}
+
+ASGI_APPLICATION = 'ticket_sales_backend.asgi.application'
 
 
 # Database
@@ -105,7 +113,7 @@ DATABASES = {
 }
 
 
-AUTH_USER_MODEL = 'user.User'
+AUTH_USER_MODEL = 'core.User'
 
 
 # Password validation
