@@ -1,7 +1,7 @@
 import uuid
 
-from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
-from django.contrib.auth.models import Group
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import Group, AbstractUser, PermissionsMixin
 from django.db import models
 
 
@@ -21,24 +21,27 @@ class UserManager(BaseUserManager):
         )
         user.is_admin = True
         user.is_staff = True
+        user.is_superuser = True
+        user.is_active = True
         user.save(using=self._db)
         return user
 
 
-class User(AbstractBaseUser):
+class User(AbstractUser):
     id = models.CharField(max_length=200, default=uuid.uuid4, unique=True, primary_key=True)
+    username = None
+    email = None
     login = models.CharField(null=False, max_length=100, unique=True)
-    date_joined = models.DateTimeField(auto_now=True)
-    last_login = models.DateTimeField(auto_now=True)
-    is_admin = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
-    requested_role = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True)
 
-    USERNAME_FIELD = 'login'
+    USERNAME_FIELD = "login"
+    REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+
+class UserGroupRequest(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class City(models.Model):
