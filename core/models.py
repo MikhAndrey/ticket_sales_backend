@@ -32,6 +32,7 @@ class User(AbstractUser):
     username = None
     email = None
     login = models.CharField(null=False, max_length=100, unique=True)
+    is_active = models.BooleanField(default=False)
 
     USERNAME_FIELD = "login"
     REQUIRED_FIELDS = []
