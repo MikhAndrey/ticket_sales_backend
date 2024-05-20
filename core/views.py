@@ -1,15 +1,16 @@
 import os
 import uuid
 
+from django.core.paginator import Paginator
 from django.http import JsonResponse
 
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
-from core.models import City, Stadium, Hall
-from core.response import Response
+from core.models import City, Stadium, Hall, Place
+from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
-    HallSerializer, HallGetSerializer
+    HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer
 from ticket_sales_backend import settings
 
 
@@ -160,6 +161,61 @@ class HallView(APIView):
             return JsonResponse(response.to_dict(), status=400)
         hall.delete()
         response = Response(message="Hall was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class PlaceListView(APIView):
+    def get(self, request, hall_id):
+        places = Place.objects.filter(hall_id=hall_id).order_by("id")
+        page_number = request.query_params.get("pageNumber")
+        per_page = request.query_params.get("pageSize")
+        paginator = Paginator(places, per_page)
+        try:
+            page_obj = paginator.page(page_number)
+        except:
+            page_obj = paginator.page(1)
+        serializer = PlaceGetSerializer(page_obj.object_list, many=True)
+        response = PageResponse(
+            model=serializer.data,
+            message="Page of places was retrieved successfully",
+            page_obj=page_obj,
+            paginator=paginator
+        )
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class PlaceView(APIView):
+    def post(self, request):
+        serializer = PlaceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            response = Response(model=serializer.data, message="Place was created successfully")
+            return JsonResponse(response.to_dict(), status=201)
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    def put(self, request, id):
+        try:
+            place = Place.objects.get(id=id)
+        except Place.DoesNotExist:
+            response = Response(errors="Place was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        serializer = PlaceSerializer(place, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            response = Response(model=serializer.data, message="Place info was updated successfully")
+            return JsonResponse(response.to_dict(), status=200)
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    def delete(self, request, id):
+        try:
+            place = Place.objects.get(id=id)
+        except Place.DoesNotExist:
+            response = Response(errors="Place was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        place.delete()
+        response = Response(message="Place was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from core.models import City, User, UserGroupRequest, Stadium, Hall
+from core.models import City, User, UserGroupRequest, Stadium, Hall, Place
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -46,6 +46,21 @@ class HallSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hall
         fields = ['id', 'name', 'stadium_id']
+
+
+class PlaceGetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Place
+        fields = '__all__'
+
+
+class PlaceSerializer(serializers.ModelSerializer):
+    hall_id = serializers.PrimaryKeyRelatedField(source='hall', queryset=Hall.objects.all())
+    hall_id.default_error_messages['does_not_exist'] = 'Hall was not found'
+
+    class Meta:
+        model = Place
+        fields = ['id', 'sector', 'row', 'seat', 'x_offset', 'y_offset', 'hall_id']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
