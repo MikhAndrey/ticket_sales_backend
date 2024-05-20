@@ -6,9 +6,10 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
-from core.models import City, Stadium
+from core.models import City, Stadium, Hall
 from core.response import Response
-from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer
+from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
+    HallSerializer, HallGetSerializer
 from ticket_sales_backend import settings
 
 
@@ -107,6 +108,59 @@ class StadiumView(APIView):
             for chunk in file.chunks():
                 destination.write(chunk)
         return os.path.join(folder_name, filename)
+
+
+class HallListView(APIView):
+    def get(self, request, stadium_id):
+        halls = Hall.objects.filter(stadium_id=stadium_id)
+        serializer = HallGetSerializer(halls, many=True)
+        response = Response(model=serializer.data, message="The list of halls was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class HallView(APIView):
+    def get(self, request, id):
+        try:
+            hall = Hall.objects.get(id=id)
+        except Hall.DoesNotExist:
+            response = Response(errors="Hall was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        serializer = HallGetSerializer(hall)
+        response = Response(model=serializer.data, message="Hall info was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+    def post(self, request):
+        serializer = HallSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            response = Response(model=serializer.data, message="Hall was created successfully")
+            return JsonResponse(response.to_dict(), status=201)
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    def put(self, request, id):
+        try:
+            hall = Hall.objects.get(id=id)
+        except Hall.DoesNotExist:
+            response = Response(errors="Hall was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        serializer = HallSerializer(hall, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            response = Response(model=serializer.data, message="Hall info was updated successfully")
+            return JsonResponse(response.to_dict(), status=200)
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    def delete(self, request, id):
+        try:
+            hall = Hall.objects.get(id=id)
+        except Hall.DoesNotExist:
+            response = Response(errors="Hall was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        hall.delete()
+        response = Response(message="Hall was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
 
 
 class UserRegistrationView(APIView):
