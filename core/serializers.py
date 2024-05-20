@@ -1,13 +1,36 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from core.models import City, User, UserGroupRequest
+from core.models import City, User, UserGroupRequest, Stadium
 
 
 class CitySerializer(serializers.ModelSerializer):
     class Meta:
         model = City
         fields = '__all__'
+
+
+class StadiumGetSerializer(serializers.ModelSerializer):
+    city = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Stadium
+        fields = ['id', 'address', 'name', 'description', 'photo_link', 'contacts', 'city']
+
+    def get_city(self, obj: Stadium):
+        return {
+            "id": obj.city.id,
+            "name": obj.city.name
+        }
+
+
+class StadiumSerializer(serializers.ModelSerializer):
+    city_id = serializers.PrimaryKeyRelatedField(source='city', queryset=City.objects.all())
+    city_id.default_error_messages['does_not_exist'] = 'City was not found'
+
+    class Meta:
+        model = Stadium
+        fields = ['id', 'address', 'name', 'description', 'photo_link', 'contacts', 'city_id']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

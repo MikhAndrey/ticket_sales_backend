@@ -18,11 +18,14 @@ from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from core.views import CityListView, UserRegistrationView
+from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/register/', UserRegistrationView.as_view(), name='register'),
     path('api/login/', TokenObtainPairView.as_view(), name='login'),
     path('api/cities/', CityListView.as_view(), name='city_list'),
+    path('api/stadiums/list/', StadiumListView.as_view(), name='stadium_list'),
+    path('api/stadiums/', StadiumView.as_view(http_method_names=['post'])),
+    path('api/stadiums/<int:id>', StadiumView.as_view(http_method_names=['put', 'delete', 'get'])),
 ]
