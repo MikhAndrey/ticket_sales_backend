@@ -3,14 +3,15 @@ import uuid
 
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.utils import timezone
 
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
-from core.models import City, Stadium, Hall, Place
+from core.models import City, Stadium, Hall, Place, Event
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
-    HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer
+    HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer
 from ticket_sales_backend import settings
 
 
@@ -217,6 +218,15 @@ class PlaceView(APIView):
         place.delete()
         response = Response(message="Place was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
+
+
+class EventAnnouncementView(APIView):
+    def get(self, request, city_id):
+        now = timezone.now()
+        events = Event.objects.filter(hall__stadium__city_id=city_id, start_date__gt=now).order_by('start_date')
+        serializer = EventAnnouncementSerializer(events, many=True)
+        response = Response(model=serializer.data, message="The list of events was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
 
 
 class UserRegistrationView(APIView):
