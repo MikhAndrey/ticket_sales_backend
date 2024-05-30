@@ -10,12 +10,14 @@ from rest_framework.decorators import permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
-from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, CanAddHall, CanChangeHall, CanDeleteHall, \
-    CanAddPlace, CanChangePlace, CanDeletePlace
+from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, CanAddHall, CanChangeHall, \
+    CanDeleteHall, \
+    CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent
 from core.models import City, Stadium, Hall, Place, Event
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
-    HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer
+    HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
+    EventGetSerializer, EventSerializer
 from ticket_sales_backend import settings
 
 
@@ -68,7 +70,8 @@ class StadiumView(APIView):
         serializer = StadiumSerializer(data=data)
 
         if serializer.is_valid():
-            serializer.save()
+            stadium = serializer.save()
+            serializer = StadiumGetSerializer(stadium)
             response = Response(model=serializer.data, message="Stadium was created successfully")
             return JsonResponse(response.to_dict(), status=201)
 
@@ -91,7 +94,8 @@ class StadiumView(APIView):
         serializer = StadiumSerializer(stadium, data=data)
 
         if serializer.is_valid():
-            serializer.save()
+            stadium = serializer.save()
+            serializer = StadiumGetSerializer(stadium)
             response = Response(model=serializer.data, message="Stadium info was updated successfully")
             return JsonResponse(response.to_dict(), status=200)
 
@@ -155,7 +159,8 @@ class HallView(APIView):
     def post(self, request):
         serializer = HallSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            hall = serializer.save()
+            serializer = HallGetSerializer(hall)
             response = Response(model=serializer.data, message="Hall was created successfully")
             return JsonResponse(response.to_dict(), status=201)
 
@@ -173,6 +178,8 @@ class HallView(APIView):
         serializer = HallSerializer(hall, data=request.data)
         if serializer.is_valid():
             serializer.save()
+            hall = serializer.save()
+            serializer = HallGetSerializer(hall)
             response = Response(model=serializer.data, message="Hall info was updated successfully")
             return JsonResponse(response.to_dict(), status=200)
 
@@ -221,7 +228,8 @@ class PlaceView(APIView):
         serializer = PlaceSerializer(data=place_data, many=True)
         if serializer.is_valid():
             with transaction.atomic():
-                serializer.save()
+                places = serializer.save()
+                serializer = PlaceGetSerializer(places, many=True)
 
             response = Response(model=serializer.data, message="Places were added successfully")
             return JsonResponse(response.to_dict(), status=201)
@@ -245,7 +253,8 @@ class PlaceView(APIView):
             for i in range(len(places)):
                 serializer = PlaceSerializer(places[i], data=place_data[i])
                 if serializer.is_valid():
-                    serializer.save()
+                    place = serializer.save()
+                    serializer = PlaceGetSerializer(place)
                     response_model.append(serializer.data)
                 else:
                     response = Response(errors=serializer.errors)
@@ -267,6 +276,68 @@ class PlaceView(APIView):
             places.delete()
 
         response = Response(message="Places were deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class EventView(APIView):
+    def get(self, request, id):
+        try:
+            event = Event.objects.get(id=id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        serializer = EventGetSerializer(event)
+
+        response = Response(model=serializer.data, message="Event info was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+    @permission_classes([CanAddEvent])
+    def post(self, request):
+        data = request.data
+        serializer = EventSerializer(data=data)
+        if serializer.is_valid():
+            event = serializer.save()
+            serializer = EventGetSerializer(event)
+            response = Response(model=serializer.data, message="Event was created successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanChangeEvent])
+    def put(self, request, id):
+        try:
+            event = Event.objects.get(id=id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        serializer = EventSerializer(event, data=request.data)
+        if serializer.is_valid():
+            event = serializer.save()
+            serializer = EventGetSerializer(event)
+            response = Response(model=serializer.data, message="Event info was updated successfully")
+            return JsonResponse(response.to_dict(), status=200)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeleteEvent])
+    def delete(self, request, id):
+        try:
+            event = Event.objects.get(id=id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        photo_link = event.photo_link
+        if photo_link:
+            file_path = os.path.join(settings.MEDIA_ROOT, photo_link)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        event.delete()
+
+        response = Response(message="Event was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 

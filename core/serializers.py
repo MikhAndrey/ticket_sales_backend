@@ -84,6 +84,36 @@ class EventAnnouncementSerializer(serializers.ModelSerializer):
         }
 
 
+class EventGetSerializer(serializers.ModelSerializer):
+    hall = serializers.SerializerMethodField()
+    stadium = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Event
+        fields = ['id', 'start_date', 'end_date', 'name', 'description', 'photo_link', 'contacts', 'hall', 'stadium']
+
+    def get_hall(self, obj: Event):
+        return {
+            "id": obj.hall.id,
+            "name": obj.hall.name
+        }
+
+    def get_stadium(self, obj: Event):
+        return {
+            "id": obj.hall.stadium.id,
+            "name": obj.hall.stadium.name
+        }
+
+
+class EventSerializer(serializers.ModelSerializer):
+    hall_id = serializers.PrimaryKeyRelatedField(source='hall', queryset=Hall.objects.all())
+    hall_id.default_error_messages['does_not_exist'] = 'Hall was not found'
+
+    class Meta:
+        model = Event
+        fields = ['id', 'start_date', 'end_date', 'name', 'description', 'contacts', 'hall_id']
+
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     password_confirm = serializers.CharField(write_only=True)

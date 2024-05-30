@@ -44,3 +44,18 @@ class CanChangePlace(BasePermission):
 class CanDeletePlace(BasePermission):
     def has_permission(self, request, view):
         return request.user.has_perm('delete_place')
+
+
+class CanAddEvent(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('add_event')
+
+
+class CanChangeEvent(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('change_event')
+
+
+class CanDeleteEvent(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('delete_event')

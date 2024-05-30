@@ -3,6 +3,7 @@ import uuid
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import Group, AbstractUser, PermissionsMixin
 from django.db import models
+from django.db.models import Avg
 
 
 class UserManager(BaseUserManager):
@@ -81,7 +82,12 @@ class Event(models.Model):
     description = models.CharField(max_length=200)
     photo_link = models.CharField(max_length=200)
     contacts = models.CharField(max_length=100)
-    average_mark = models.FloatField()
+    average_mark = models.FloatField(default=0.0)
+
+    def update_average_mark(self):
+        average = self.feedback_set.aggregate(Avg('mark'))['mark__avg']
+        self.average_mark = average if average is not None else 0
+        self.save()
 
 
 class Place(models.Model):
@@ -118,6 +124,15 @@ class Feedback(models.Model):
     text = models.CharField(max_length=500)
     date = models.DateTimeField()
     mark = models.IntegerField()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.event.update_average_mark()
+
+    def delete(self, *args, **kwargs):
+        event = self.event
+        super().delete(*args, **kwargs)
+        event.update_average_mark()
 
 
 class Photo(models.Model):
