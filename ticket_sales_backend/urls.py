@@ -33,6 +33,5 @@ urlpatterns = [
     path('api/halls/', HallView.as_view(http_method_names=['post'])),
     path('api/halls/<int:id>', HallView.as_view(http_method_names=['put', 'delete', 'get'])),
     path('api/places/list/<int:hall_id>', PlaceListView.as_view(), name='place_list'),
-    path('api/places/', PlaceView.as_view(http_method_names=['post'])),
-    path('api/places/<int:id>', PlaceView.as_view(http_method_names=['put', 'delete'])),
+    path('api/places/', PlaceView.as_view(http_method_names=['post', 'put', 'delete'])),
 ]
