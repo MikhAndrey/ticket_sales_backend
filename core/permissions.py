@@ -59,3 +59,18 @@ class CanChangeEvent(BasePermission):
 class CanDeleteEvent(BasePermission):
     def has_permission(self, request, view):
         return request.user.has_perm('delete_event')
+
+
+class CanAddPromotion(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('add_promotion')
+
+
+class CanChangePromotion(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('change_promotion')
+
+
+class CanDeletePromotion(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('delete_promotion')

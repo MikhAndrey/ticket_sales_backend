@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event
+from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -112,6 +112,30 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = ['id', 'start_date', 'end_date', 'name', 'description', 'contacts', 'hall_id']
+
+
+class PromotionGetSerializer(serializers.ModelSerializer):
+    events = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Promotion
+        fields = ['start_date', 'end_date', 'discount', 'events']
+
+    def get_events(self, obj: Promotion):
+        promotion_events = PromotionEvent.objects.filter(promotion=obj)
+        return EventGetSerializer([pe.event for pe in promotion_events], many=True).data
+
+
+class PromotionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Promotion
+        fields = "__all__"
+
+
+class PromotionEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PromotionEvent
+        fields = "__all__"
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

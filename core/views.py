@@ -12,12 +12,13 @@ from rest_framework.views import APIView
 
 from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, CanAddHall, CanChangeHall, \
     CanDeleteHall, \
-    CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent
-from core.models import City, Stadium, Hall, Place, Event
+    CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
+    CanChangePromotion, CanDeletePromotion
+from core.models import City, Stadium, Hall, Place, Event, Promotion
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
-    EventGetSerializer, EventSerializer
+    EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer
 from ticket_sales_backend import settings
 
 
@@ -338,6 +339,92 @@ class EventView(APIView):
         event.delete()
 
         response = Response(message="Event was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class PromotionView(APIView):
+    def get(self, request, id):
+        try:
+            promotion = Promotion.objects.get(id=id)
+        except Promotion.DoesNotExist:
+            response = Response(errors="Promotion was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        serializer = PromotionGetSerializer(promotion)
+
+        response = Response(model=serializer.data, message="Promotion info was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+    @permission_classes([CanAddPromotion])
+    def post(self, request):
+        data = request.data
+        serializer = PromotionSerializer(data={
+            "start_date": data["start_date"],
+            "end_date": data["end_date"],
+            "discount": data["discount"]})
+        if serializer.is_valid():
+            with transaction.atomic():
+                promotion = serializer.save()
+                event_ids = data["event_ids"]
+                try:
+                    events = Event.objects.filter(id__in=event_ids)
+                    for event in events:
+                        promotion_event_serializer = PromotionEventSerializer(data={
+                            "event": event.id,
+                            "promotion": promotion.id
+                        })
+                        if promotion_event_serializer.is_valid():
+                            promotion_event_serializer.save()
+                        else:
+                            response = Response(errors=promotion_event_serializer.errors)
+                            return JsonResponse(response.to_dict(), status=400)
+
+                except Event.DoesNotExist:
+                    response = Response(errors="One or more events were not found")
+                    return JsonResponse(response.to_dict(), status=400)
+
+            serializer = PromotionGetSerializer(promotion)
+
+            response = Response(model=serializer.data, message="Promotion was created successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanChangePromotion])
+    def put(self, request, id):
+        try:
+            promotion = Promotion.objects.get(id=id)
+        except Promotion.DoesNotExist:
+            response = Response(errors="Promotion was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        data = request.data
+        serializer = PromotionSerializer(promotion, data={
+            "start_date": data["start_date"],
+            "end_date": data["end_date"],
+            "discount": data["discount"]})
+
+        if serializer.is_valid():
+            promotion = serializer.save()
+            serializer = PromotionGetSerializer(promotion)
+            response = Response(model=serializer.data, message="Promotion was updated successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeletePromotion])
+    def delete(self, request, id):
+        try:
+            promotion = Promotion.objects.get(id=id)
+        except Promotion.DoesNotExist:
+            response = Response(errors="Promotion was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        promotion.delete()
+
+        response = Response(message="Promotion was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 
