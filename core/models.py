@@ -52,6 +52,7 @@ class City(models.Model):
 
 class Stadium(models.Model):
     city = models.ForeignKey(City, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     address = models.CharField(max_length=100)
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=200)
@@ -76,6 +77,7 @@ class Purchase(models.Model):
 
 class Event(models.Model):
     hall = models.ForeignKey(Hall, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     name = models.CharField(max_length=100)

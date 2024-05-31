@@ -66,7 +66,7 @@ class StadiumView(APIView):
     def post(self, request):
         serializer = StadiumSerializer(data=request.data)
         if serializer.is_valid():
-            stadium = serializer.save()
+            stadium = serializer.save(user=request.user)
             serializer = StadiumGetSerializer(stadium)
             response = Response(model=serializer.data, message="Stadium was created successfully")
             return JsonResponse(response.to_dict(), status=201)
@@ -320,7 +320,7 @@ class EventView(APIView):
         data = request.data
         serializer = EventSerializer(data=data)
         if serializer.is_valid():
-            event = serializer.save()
+            event = serializer.save(user=request.user)
             serializer = EventGetSerializer(event)
             response = Response(model=serializer.data, message="Event was created successfully")
             return JsonResponse(response.to_dict(), status=201)
