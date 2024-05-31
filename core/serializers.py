@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent
+from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -136,6 +136,29 @@ class PromotionEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = PromotionEvent
         fields = "__all__"
+
+
+class FeedbackGetSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Feedback
+        fields = ['id', 'text', 'date', 'mark', 'user']
+
+    def get_user(self, obj: Feedback):
+        return {
+            "id": obj.user.id,
+            "name": obj.user.login
+        }
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    event_id = serializers.PrimaryKeyRelatedField(source='event', queryset=Event.objects.all())
+    event_id.default_error_messages['does_not_exist'] = 'Event was not found'
+
+    class Meta:
+        model = Feedback
+        fields = ['id', 'text', 'mark', 'event_id']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

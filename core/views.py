@@ -7,18 +7,19 @@ from django.http import JsonResponse
 from django.utils import timezone
 from rest_framework.decorators import permission_classes
 
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
 from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, CanAddHall, CanChangeHall, \
     CanDeleteHall, \
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
     CanChangePromotion, CanDeletePromotion
-from core.models import City, Stadium, Hall, Place, Event, Promotion
+from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
-    EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer
+    EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
+    FeedbackGetSerializer, FeedbackSerializer
 from ticket_sales_backend import settings
 
 
@@ -137,6 +138,11 @@ class StadiumView(APIView):
 
 class HallListView(APIView):
     def get(self, request, stadium_id):
+        try:
+            Stadium.objects.get(id=stadium_id)
+        except Stadium.DoesNotExist:
+            response = Response(errors="Stadium was not found")
+            return JsonResponse(response.to_dict(), status=400)
         halls = Hall.objects.filter(stadium_id=stadium_id)
         serializer = HallGetSerializer(halls, many=True)
 
@@ -178,7 +184,6 @@ class HallView(APIView):
 
         serializer = HallSerializer(hall, data=request.data)
         if serializer.is_valid():
-            serializer.save()
             hall = serializer.save()
             serializer = HallGetSerializer(hall)
             response = Response(model=serializer.data, message="Hall info was updated successfully")
@@ -342,6 +347,21 @@ class EventView(APIView):
         return JsonResponse(response.to_dict(), status=204)
 
 
+class EventAnnouncementView(APIView):
+    def get(self, request, city_id):
+        try:
+            City.objects.get(id=city_id)
+        except City.DoesNotExist:
+            response = Response(errors="City was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        now = timezone.now()
+        events = Event.objects.filter(hall__stadium__city_id=city_id, start_date__gt=now).order_by('start_date')
+        serializer = EventAnnouncementSerializer(events, many=True)
+
+        response = Response(model=serializer.data, message="The list of events was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+
 class PromotionView(APIView):
     def get(self, request, id):
         try:
@@ -428,14 +448,60 @@ class PromotionView(APIView):
         return JsonResponse(response.to_dict(), status=204)
 
 
-class EventAnnouncementView(APIView):
-    def get(self, request, city_id):
-        now = timezone.now()
-        events = Event.objects.filter(hall__stadium__city_id=city_id, start_date__gt=now).order_by('start_date')
-        serializer = EventAnnouncementSerializer(events, many=True)
-
-        response = Response(model=serializer.data, message="The list of events was retrieved successfully")
+class FeedbackListView(APIView):
+    def get(self, request, event_id):
+        try:
+            Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        feedbacks = Feedback.objects.filter(event_id=event_id).order_by('-date')
+        serializer = FeedbackGetSerializer(feedbacks, many=True)
+        response = Response(model=serializer.data, message="The list of feedbacks was retrieved successfully")
         return JsonResponse(response.to_dict(), status=200)
+
+
+class FeedbackView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            feedback = serializer.save(user=request.user, date=timezone.now())
+            serializer = FeedbackGetSerializer(feedback)
+            response = Response(model=serializer.data, message="Feedback was created successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    def put(self, request, id):
+        try:
+            feedback = Feedback.objects.get(id=id)
+        except Feedback.DoesNotExist:
+            response = Response(errors="Feedback was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        serializer = FeedbackSerializer(feedback, data=request.data)
+        if serializer.is_valid():
+            feedback = serializer.save()
+            serializer = FeedbackGetSerializer(feedback)
+            response = Response(model=serializer.data, message="Feedback info was updated successfully")
+            return JsonResponse(response.to_dict(), status=200)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    def delete(self, request, id):
+        try:
+            feedback = Feedback.objects.get(id=id)
+        except Feedback.DoesNotExist:
+            response = Response(errors="Feedback was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        feedback.delete()
+
+        response = Response(message="Feedback was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
 
 
 class UserRegistrationView(APIView):
