@@ -19,7 +19,8 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView, HallListView, HallView, \
-    PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView
+    PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView, \
+    EventPhotoView, EventPhotoListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -35,6 +36,10 @@ urlpatterns = [
     path('api/places/list/<int:hall_id>', PlaceListView.as_view(), name='place_list'),
     path('api/places/', PlaceView.as_view(http_method_names=['post', 'put', 'delete'])),
     path('api/events/', EventView.as_view(http_method_names=['post'])),
+    path('api/events/<int:id>', EventView.as_view(http_method_names=['put', 'delete', 'get'])),
+    path('api/events/photos/<int:event_id>', EventPhotoListView.as_view(http_method_names=['get'])),
+    path('api/events/photos/', EventPhotoView.as_view(http_method_names=['post'])),
+    path('api/events/photos/<int:id>', EventPhotoView.as_view(http_method_names=['delete'])),
     path('api/events/<int:id>', EventView.as_view(http_method_names=['put', 'delete', 'get'])),
     path('api/promotions/', PromotionView.as_view(http_method_names=['post'])),
     path('api/promotions/<int:id>', PromotionView.as_view(http_method_names=['put', 'delete', 'get'])),

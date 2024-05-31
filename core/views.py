@@ -1,5 +1,4 @@
 import os
-import uuid
 
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -10,16 +9,17 @@ from rest_framework.decorators import permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
+from core.helpers import handle_uploaded_file
 from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, CanAddHall, CanChangeHall, \
     CanDeleteHall, \
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
-    CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent
-from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent
+    CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent, CanAddPhoto, CanDeletePhoto
+from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
     EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
-    FeedbackGetSerializer, FeedbackSerializer
+    FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer
 from ticket_sales_backend import settings
 
 
@@ -121,19 +121,6 @@ class StadiumView(APIView):
 
         response = Response(message="Stadium was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
-
-    def handle_uploaded_file(self, file):
-        folder_name = 'stadiums'
-        upload_dir = os.path.join(settings.MEDIA_ROOT, folder_name)
-        if not os.path.exists(upload_dir):
-            os.makedirs(upload_dir)
-        ext = file.name.split('.')[-1]
-        filename = f"{uuid.uuid4()}.{ext}"
-        file_path = os.path.join(upload_dir, filename)
-        with open(file_path, 'wb+') as destination:
-            for chunk in file.chunks():
-                destination.write(chunk)
-        return os.path.join(folder_name, filename)
 
 
 class HallListView(APIView):
@@ -360,6 +347,76 @@ class EventAnnouncementView(APIView):
 
         response = Response(model=serializer.data, message="The list of events was retrieved successfully")
         return JsonResponse(response.to_dict(), status=200)
+
+
+class EventPhotoListView(APIView):
+    def get(self, request, event_id):
+        try:
+            Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        photos = Photo.objects.filter(event_id=event_id).order_by('-id')
+        serializer = EventPhotoSerializer(photos, many=True)
+        response = Response(model=serializer.data, message="The list of event photos was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class EventPhotoView(APIView):
+    @permission_classes([CanAddPhoto])
+    def post(self, request):
+        try:
+            event_id = request.query_params['event_id']
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        file = request.FILES.get('photo')
+        if file:
+            file_path = handle_uploaded_file(file, 'events')
+            data = {'link': file_path, 'event_id': event_id}
+            serializer = EventPhotoSerializer(data=data)
+
+            if serializer.is_valid():
+                with transaction.atomic():
+                    photo = serializer.save()
+                    photos = Photo.objects.filter(event=event)
+                    if len(photos) == 1:
+                        event.photo_link = photo.link
+                        event.save()
+                response = Response(model=serializer.data, message="Event photo was added successfully")
+                return JsonResponse(response.to_dict(), status=201)
+
+            response = Response(errors=serializer.errors)
+            return JsonResponse(response.to_dict(), status=400)
+
+        response = Response(errors="Photo was not uploaded")
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeletePhoto])
+    def delete(self, request, id):
+        try:
+            photo = Photo.objects.get(id=id)
+        except Photo.DoesNotExist:
+            response = Response(errors="Photo was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        if photo.link:
+            file_path = os.path.join(settings.MEDIA_ROOT, photo.link)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        event = Event.objects.get(id=photo.event_id)
+        with transaction.atomic():
+            photo.delete()
+            photos = Photo.objects.filter(event=event)
+            if len(photos) == 0:
+                event.photo_link = None
+                event.save()
+
+        response = Response(message="Event photo was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
 
 
 class PromotionView(APIView):

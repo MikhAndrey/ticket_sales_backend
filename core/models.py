@@ -79,8 +79,8 @@ class Event(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     name = models.CharField(max_length=100)
-    description = models.CharField(max_length=200)
-    photo_link = models.CharField(max_length=200)
+    description = models.CharField(max_length=200, null=True, blank=True)
+    photo_link = models.CharField(max_length=200, null=True, blank=True)
     contacts = models.CharField(max_length=100)
     average_mark = models.FloatField(default=0.0)
 
