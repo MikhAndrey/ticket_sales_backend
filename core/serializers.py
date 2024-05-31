@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback, \
-    Photo
+    Photo, Video
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -121,6 +121,15 @@ class EventPhotoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Photo
+        fields = ['id', 'link', 'event_id']
+
+
+class EventVideoSerializer(serializers.ModelSerializer):
+    event_id = serializers.PrimaryKeyRelatedField(source='event', queryset=Event.objects.all())
+    event_id.default_error_messages['does_not_exist'] = 'Event was not found'
+
+    class Meta:
+        model = Video
         fields = ['id', 'link', 'event_id']
 
 

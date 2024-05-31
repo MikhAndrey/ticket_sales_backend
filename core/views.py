@@ -13,13 +13,14 @@ from core.helpers import handle_uploaded_file
 from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, CanAddHall, CanChangeHall, \
     CanDeleteHall, \
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
-    CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent, CanAddPhoto, CanDeletePhoto
-from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo
+    CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent, CanAddPhoto, CanDeletePhoto, \
+    CanAddVideo, CanDeleteVideo
+from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
     EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
-    FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer
+    FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer
 from ticket_sales_backend import settings
 
 
@@ -447,6 +448,64 @@ class EventPhotoView(APIView):
                 event.save()
 
         response = Response(message="Event photo was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class EventVideoListView(APIView):
+    def get(self, request, event_id):
+        try:
+            Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+        videos = Video.objects.filter(event_id=event_id).order_by('-id')
+        serializer = EventVideoSerializer(videos, many=True)
+        response = Response(model=serializer.data, message="The list of event videos was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class EventVideoView(APIView):
+    @permission_classes([CanAddVideo])
+    def post(self, request):
+        try:
+            event_id = request.query_params['event_id']
+            Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            response = Response(errors="Event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        file = request.FILES.get('video')
+        if file:
+            file_path = handle_uploaded_file(file, 'events')
+            data = {'link': file_path, 'event_id': event_id}
+            serializer = EventVideoSerializer(data=data)
+
+            if serializer.is_valid():
+                serializer.save()
+                response = Response(model=serializer.data, message="Event video was added successfully")
+                return JsonResponse(response.to_dict(), status=201)
+
+            response = Response(errors=serializer.errors)
+            return JsonResponse(response.to_dict(), status=400)
+
+        response = Response(errors="Video was not uploaded")
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeleteVideo])
+    def delete(self, request, id):
+        try:
+            video = Video.objects.get(id=id)
+        except Video.DoesNotExist:
+            response = Response(errors="Video was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        if video.link:
+            file_path = os.path.join(settings.MEDIA_ROOT, video.link)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            video.delete()
+
+        response = Response(message="Event video was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 

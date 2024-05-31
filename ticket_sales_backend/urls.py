@@ -20,7 +20,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView, HallListView, HallView, \
     PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView, \
-    EventPhotoView, EventPhotoListView, StadiumPhotoView
+    EventPhotoView, EventPhotoListView, StadiumPhotoView, EventVideoListView, EventVideoView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -39,10 +39,12 @@ urlpatterns = [
     path('api/places/', PlaceView.as_view(http_method_names=['post', 'put', 'delete'])),
     path('api/events/', EventView.as_view(http_method_names=['post'])),
     path('api/events/<int:id>', EventView.as_view(http_method_names=['put', 'delete', 'get'])),
-    path('api/events/photos/<int:event_id>', EventPhotoListView.as_view(http_method_names=['get'])),
+    path('api/events/photos/list/<int:event_id>', EventPhotoListView.as_view(http_method_names=['get'])),
     path('api/events/photos/', EventPhotoView.as_view(http_method_names=['post'])),
     path('api/events/photos/<int:id>', EventPhotoView.as_view(http_method_names=['delete'])),
-    path('api/events/<int:id>', EventView.as_view(http_method_names=['put', 'delete', 'get'])),
+    path('api/events/videos/list/<int:event_id>', EventVideoListView.as_view(http_method_names=['get'])),
+    path('api/events/videos/', EventVideoView.as_view(http_method_names=['post'])),
+    path('api/events/videos/<int:id>', EventVideoView.as_view(http_method_names=['delete'])),
     path('api/promotions/', PromotionView.as_view(http_method_names=['post'])),
     path('api/promotions/<int:id>', PromotionView.as_view(http_method_names=['put', 'delete', 'get'])),
     path('api/feedbacks/list/<int:event_id>', FeedbackListView.as_view(http_method_names=['get'])),
