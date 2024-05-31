@@ -133,9 +133,15 @@ class PromotionSerializer(serializers.ModelSerializer):
 
 
 class PromotionEventSerializer(serializers.ModelSerializer):
+    promotion_id = serializers.PrimaryKeyRelatedField(source='promotion', queryset=Promotion.objects.all())
+    promotion_id.default_error_messages['does_not_exist'] = 'Promotion was not found'
+
+    event_id = serializers.PrimaryKeyRelatedField(source='event', queryset=Event.objects.all())
+    event_id.default_error_messages['does_not_exist'] = 'Event was not found'
+
     class Meta:
         model = PromotionEvent
-        fields = "__all__"
+        fields = ["promotion_id", "event_id"]
 
 
 class FeedbackGetSerializer(serializers.ModelSerializer):

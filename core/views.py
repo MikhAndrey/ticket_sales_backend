@@ -13,8 +13,8 @@ from rest_framework.views import APIView
 from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, CanAddHall, CanChangeHall, \
     CanDeleteHall, \
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
-    CanChangePromotion, CanDeletePromotion
-from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback
+    CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent
+from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
@@ -445,6 +445,36 @@ class PromotionView(APIView):
         promotion.delete()
 
         response = Response(message="Promotion was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class PromotionEventView(APIView):
+    @permission_classes([CanAddPromotionEvent])
+    def post(self, request):
+        serializer = PromotionEventSerializer(data=request.data)
+        if serializer.is_valid():
+            promotion_event = serializer.save()
+            serializer = PromotionGetSerializer(promotion_event.promotion)
+
+            response = Response(model=serializer.data, message="Promotion for event was added successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeletePromotionEvent])
+    def delete(self, request):
+        try:
+            promotion_event = PromotionEvent.objects.get(
+                event_id=request.query_params["event_id"],
+                promotion_id=request.query_params["promotion_id"])
+        except PromotionEvent.DoesNotExist:
+            response = Response(errors="Promotion for this event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        promotion_event.delete()
+
+        response = Response(message="Promotion for specified event was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 

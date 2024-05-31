@@ -19,7 +19,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView, HallListView, HallView, \
-    PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView
+    PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -41,4 +41,5 @@ urlpatterns = [
     path('api/feedbacks/list/<int:event_id>', FeedbackListView.as_view(http_method_names=['get'])),
     path('api/feedbacks/', FeedbackView.as_view(http_method_names=['post'])),
     path('api/feedbacks/<int:id>', FeedbackView.as_view(http_method_names=['put', 'delete'])),
+    path('api/promotion-events/', PromotionEventView.as_view(http_method_names=['post', 'delete'])),
 ]
