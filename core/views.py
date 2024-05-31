@@ -64,13 +64,7 @@ class StadiumView(APIView):
 
     @permission_classes([CanAddStadium])
     def post(self, request):
-        data = request.data
-        file = request.FILES.get('photo')
-        if file:
-            file_path = self.handle_uploaded_file(file)
-            data['photo_link'] = file_path
-        serializer = StadiumSerializer(data=data)
-
+        serializer = StadiumSerializer(data=request.data)
         if serializer.is_valid():
             stadium = serializer.save()
             serializer = StadiumGetSerializer(stadium)
@@ -88,12 +82,7 @@ class StadiumView(APIView):
             response = Response(errors="Stadium was not found")
             return JsonResponse(response.to_dict(), status=400)
 
-        data = request.data
-        file = request.FILES.get('photo')
-        if file:
-            file_path = self.handle_uploaded_file(file)
-            data['photo_link'] = file_path
-        serializer = StadiumSerializer(stadium, data=data)
+        serializer = StadiumSerializer(stadium, data=request.data)
 
         if serializer.is_valid():
             stadium = serializer.save()
@@ -120,6 +109,48 @@ class StadiumView(APIView):
         stadium.delete()
 
         response = Response(message="Stadium was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class StadiumPhotoView(APIView):
+    @permission_classes([CanAddPhoto])
+    def post(self, request):
+        try:
+            stadium_id = request.query_params['stadium_id']
+            stadium = Stadium.objects.get(id=stadium_id)
+        except Stadium.DoesNotExist:
+            response = Response(errors="Stadium was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        file = request.FILES.get('photo')
+        if file:
+            file_path = handle_uploaded_file(file, 'stadiums')
+            stadium.photo_link = file_path
+            stadium.save()
+
+            serializer = StadiumGetSerializer(stadium)
+            response = Response(model=serializer.data, message="Stadium photo was added successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors="Photo was not uploaded")
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeletePhoto])
+    def delete(self, request, stadium_id):
+        try:
+            stadium = Stadium.objects.get(id=stadium_id)
+        except Stadium.DoesNotExist:
+            response = Response(errors="Stadium was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        if stadium.photo_link:
+            file_path = os.path.join(settings.MEDIA_ROOT, stadium.photo_link)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            stadium.photo_link = None
+            stadium.save()
+
+        response = Response(message="Stadium photo was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 

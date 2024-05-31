@@ -20,7 +20,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView, HallListView, HallView, \
     PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView, \
-    EventPhotoView, EventPhotoListView
+    EventPhotoView, EventPhotoListView, StadiumPhotoView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +30,8 @@ urlpatterns = [
     path('api/stadiums/list/', StadiumListView.as_view(), name='stadium_list'),
     path('api/stadiums/', StadiumView.as_view(http_method_names=['post'])),
     path('api/stadiums/<int:id>', StadiumView.as_view(http_method_names=['put', 'delete', 'get'])),
+    path('api/stadiums/photos/', StadiumPhotoView.as_view(http_method_names=['post'])),
+    path('api/stadiums/photos/<int:stadium_id>', StadiumPhotoView.as_view(http_method_names=['delete'])),
     path('api/halls/list/<int:stadium_id>', HallListView.as_view(), name='hall_list'),
     path('api/halls/', HallView.as_view(http_method_names=['post'])),
     path('api/halls/<int:id>', HallView.as_view(http_method_names=['put', 'delete', 'get'])),
