@@ -29,8 +29,13 @@ SECRET_KEY = 'django-insecure-t-+$97fh5!phcabb%=_%o4_4+#f9)srnkg850_)-f%!(o%kyv%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost"]
 
+CHANNEL_LAYERS = {
+  'default': {
+    'BACKEND': 'channels.layers.InMemoryChannelLayer'
+  }
+}
 
 # Application definition
 
@@ -40,12 +45,15 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'core',
-    'messenger'
+    'messenger',
+    'corsheaders',
+    'channels'
 ]
 
 MIDDLEWARE = [

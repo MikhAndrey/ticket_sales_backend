@@ -7,6 +7,7 @@ from core.models import User
 from core.response import Response, PageResponse
 from messenger.models import Chat, ChatMessage
 from messenger.serializers import ChatMessageGetSerializer, ChatMessageUpdateSerializer, ChatMessageCreateSerializer
+from messenger.websockets import send_message
 
 
 class ChatMessageListView(APIView):
@@ -54,6 +55,9 @@ class ChatMessageView(APIView):
         if serializer.is_valid():
             message = serializer.save()
             serializer = ChatMessageGetSerializer(message)
+
+            send_message('message.send', serializer.data)
+
             response = Response(model=serializer.data, message="Message was created successfully")
             return JsonResponse(response.to_dict(), status=200)
 
@@ -71,6 +75,9 @@ class ChatMessageView(APIView):
         if serializer.is_valid():
             message = serializer.save()
             serializer = ChatMessageGetSerializer(message)
+
+            send_message('message.update', serializer.data)
+
             response = Response(model=serializer.data, message="Message info was updated successfully")
             return JsonResponse(response.to_dict(), status=200)
 
@@ -85,6 +92,8 @@ class ChatMessageView(APIView):
             return JsonResponse(response.to_dict(), status=400)
 
         message.delete()
+
+        send_message('message.delete', id)
 
         response = Response(message="Message was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
