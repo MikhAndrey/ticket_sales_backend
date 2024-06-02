@@ -7,16 +7,17 @@ from messenger.models import ChatMessage, ChatMember, Chat
 
 
 class ChatMessageGetSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
+    chat = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatMessage
-        fields = ['id', 'text', 'date', 'user']
+        fields = ['id', 'text', 'date', 'chat']
 
-    def get_user(self, obj: ChatMessage):
+    def get_chat(self, obj: ChatMessage):
         return {
-            "id": obj.chat_member.user.id,
-            "name": obj.chat_member.user.login
+            "sender_id": obj.chat_member.user.id,
+            "name": obj.chat_member.user.login,
+            "chat_id": obj.chat_member.chat_id
         }
 
 

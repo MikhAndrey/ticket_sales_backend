@@ -56,7 +56,7 @@ class ChatMessageView(APIView):
             message = serializer.save()
             serializer = ChatMessageGetSerializer(message)
 
-            send_message('message.send', serializer.data)
+            send_message('message.send', serializer.data, serializer.data['chat']['chat_id'])
 
             response = Response(model=serializer.data, message="Message was created successfully")
             return JsonResponse(response.to_dict(), status=200)
@@ -76,7 +76,7 @@ class ChatMessageView(APIView):
             message = serializer.save()
             serializer = ChatMessageGetSerializer(message)
 
-            send_message('message.update', serializer.data)
+            send_message('message.update', serializer.data, serializer.data['chat']['chat_id'])
 
             response = Response(model=serializer.data, message="Message info was updated successfully")
             return JsonResponse(response.to_dict(), status=200)
@@ -87,13 +87,14 @@ class ChatMessageView(APIView):
     def delete(self, request, id):
         try:
             message = ChatMessage.objects.get(id=id)
+            chat_id = message.chat_member.chat_id
         except ChatMessage.DoesNotExist:
             response = Response(errors="Message was not found")
             return JsonResponse(response.to_dict(), status=400)
 
         message.delete()
 
-        send_message('message.delete', id)
+        send_message('message.delete', id, chat_id)
 
         response = Response(message="Message was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
