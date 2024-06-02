@@ -6,17 +6,36 @@ from core.models import User
 from messenger.models import ChatMessage, ChatMember, Chat
 
 
+class ChatGetSerializer(serializers.ModelSerializer):
+    info = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Chat
+        fields = ['id', 'last_message', 'info']
+
+    def get_info(self, obj: Chat):
+        members = obj.chatmember_set.exclude(user=self.context['request'].user)
+        if members.exists():
+            member = members.first()
+            return {"user_name": member.user.login, "user_id": member.user.id}
+        return None
+
+    def get_last_message(self, obj: Chat):
+        return ChatMessageGetSerializer(obj.last_message).data
+
+
 class ChatMessageGetSerializer(serializers.ModelSerializer):
-    chat = serializers.SerializerMethodField()
+    info = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatMessage
-        fields = ['id', 'text', 'date', 'chat']
+        fields = ['id', 'text', 'date', 'info']
 
-    def get_chat(self, obj: ChatMessage):
+    def get_info(self, obj: ChatMessage):
         return {
             "sender_id": obj.chat_member.user.id,
-            "name": obj.chat_member.user.login,
+            "sender_name": obj.chat_member.user.login,
             "chat_id": obj.chat_member.chat_id
         }
 

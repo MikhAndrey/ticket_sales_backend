@@ -6,6 +6,10 @@ from core.models import User
 class Chat(models.Model):
     pass
 
+    @property
+    def last_message(self):
+        return ChatMessage.objects.filter(chat_member__chat=self).order_by('-date').first()
+
 
 class ChatMember(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)

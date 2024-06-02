@@ -21,7 +21,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView, HallListView, HallView, \
     PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView, \
     EventPhotoView, EventPhotoListView, StadiumPhotoView, EventVideoListView, EventVideoView
-from messenger.views import ChatMessageView, ChatMessageListView
+from messenger.views import ChatMessageView, ChatMessageListView, ChatListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/feedbacks/', FeedbackView.as_view(http_method_names=['post'])),
     path('api/feedbacks/<int:id>', FeedbackView.as_view(http_method_names=['put', 'delete'])),
     path('api/promotion-events/', PromotionEventView.as_view(http_method_names=['post', 'delete'])),
+    path('api/chats/', ChatListView.as_view(http_method_names=['get'])),
     path('api/messages/', ChatMessageView.as_view(http_method_names=['post'])),
     path('api/messages/<int:id>', ChatMessageView.as_view(http_method_names=['put', 'delete'])),
     path('api/messages/list/<int:chat_id>', ChatMessageListView.as_view(http_method_names=['get'])),

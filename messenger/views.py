@@ -6,8 +6,34 @@ from rest_framework.views import APIView
 from core.models import User
 from core.response import Response, PageResponse
 from messenger.models import Chat, ChatMessage
-from messenger.serializers import ChatMessageGetSerializer, ChatMessageUpdateSerializer, ChatMessageCreateSerializer
+from messenger.serializers import ChatMessageGetSerializer, ChatMessageUpdateSerializer, ChatMessageCreateSerializer, \
+    ChatGetSerializer
 from messenger.websockets import send_message
+
+
+class ChatListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_chats = Chat.objects.filter(chatmember__user=request.user).distinct()
+
+        page_number = request.query_params.get("pageNumber")
+        per_page = request.query_params.get("pageSize")
+        paginator = Paginator(user_chats, per_page)
+        try:
+            page_obj = paginator.page(page_number)
+        except:
+            page_obj = paginator.page(1)
+
+        serializer = ChatGetSerializer(page_obj.object_list, many=True, context={'request': request})
+
+        response = PageResponse(
+            model=serializer.data,
+            message="Page of chats was retrieved successfully",
+            page_obj=page_obj,
+            paginator=paginator
+        )
+        return JsonResponse(response.to_dict(), status=200)
 
 
 class ChatMessageListView(APIView):
