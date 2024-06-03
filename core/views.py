@@ -15,12 +15,12 @@ from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, 
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
     CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent, CanAddPhoto, CanDeletePhoto, \
     CanAddVideo, CanDeleteVideo
-from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video
+from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video, User
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
     EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
-    FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer
+    FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer, UserGetSerializer
 from ticket_sales_backend import settings
 
 
@@ -679,6 +679,28 @@ class FeedbackView(APIView):
 
         response = Response(message="Feedback was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
+
+
+class UserListView(APIView):
+    def get(self, request):
+        query_filter = {
+            'login': request.query_params.get('login') or "",
+        }
+
+        users = User.objects.all().filter(login__icontains=query_filter['login'])
+
+        page_number = request.query_params.get("pageNumber")
+        per_page = request.query_params.get("pageSize")
+        paginator = Paginator(users, per_page)
+        try:
+            page_obj = paginator.page(page_number)
+        except:
+            page_obj = paginator.page(1)
+
+        serializer = UserGetSerializer(page_obj.object_list, many=True)
+
+        response = Response(model=serializer.data, message="The page of users was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
 
 
 class UserRegistrationView(APIView):

@@ -186,6 +186,12 @@ class FeedbackSerializer(serializers.ModelSerializer):
         fields = ['id', 'text', 'mark', 'event_id']
 
 
+class UserGetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'login']
+
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     password_confirm = serializers.CharField(write_only=True)

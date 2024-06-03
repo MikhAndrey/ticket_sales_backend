@@ -20,13 +20,14 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView, HallListView, HallView, \
     PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView, \
-    EventPhotoView, EventPhotoListView, StadiumPhotoView, EventVideoListView, EventVideoView
+    EventPhotoView, EventPhotoListView, StadiumPhotoView, EventVideoListView, EventVideoView, UserListView
 from messenger.views import ChatMessageView, ChatMessageListView, ChatListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/register/', UserRegistrationView.as_view(), name='register'),
     path('api/login/', TokenObtainPairView.as_view(), name='login'),
+    path('api/users/', UserListView.as_view(), name='user_list'),
     path('api/cities/', CityListView.as_view(), name='city_list'),
     path('api/stadiums/list/', StadiumListView.as_view(), name='stadium_list'),
     path('api/stadiums/', StadiumView.as_view(http_method_names=['post'])),
