@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback, \
-    Photo, Video, EventRequest, EventRequestPlace, EventPlace
+    Photo, Video, EventRequest, EventRequestPlace, EventPlace, Purchase
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -140,6 +140,20 @@ class EventRequestPlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventRequestPlace
         fields = ['place_id', 'price']
+
+
+class EventPlaceGetSerializer(serializers.ModelSerializer):
+    purchase_id = serializers.PrimaryKeyRelatedField(source='purchase', queryset=Purchase.objects.all())
+    purchase_id.default_error_messages['does_not_exist'] = 'Place was not found'
+
+    place = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventPlace
+        fields = ['id', 'place', 'price', 'purchase_id']
+
+    def get_place(self, obj: EventPlace):
+        return PlaceGetSerializer(obj.place).data
 
 
 class EventRequestPlaceGetSerializer(serializers.ModelSerializer):

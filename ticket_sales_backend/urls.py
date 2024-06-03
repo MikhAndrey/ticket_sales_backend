@@ -21,7 +21,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from core.views import CityListView, UserRegistrationView, StadiumView, StadiumListView, HallListView, HallView, \
     PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView, \
     EventPhotoView, EventPhotoListView, StadiumPhotoView, EventVideoListView, EventVideoView, UserListView, \
-    EventRequestView, EventRequestPlaceView, EventRequestPlaceListView
+    EventRequestView, EventRequestPlaceView, EventRequestPlaceListView, EventPlaceListView
 from messenger.views import ChatMessageView, ChatMessageListView, ChatListView
 
 urlpatterns = [
@@ -48,6 +48,7 @@ urlpatterns = [
     path('api/events/videos/list/<int:event_id>', EventVideoListView.as_view(http_method_names=['get'])),
     path('api/events/videos/', EventVideoView.as_view(http_method_names=['post'])),
     path('api/events/videos/<int:id>', EventVideoView.as_view(http_method_names=['delete'])),
+    path('api/events/places/list/<int:event_id>', EventPlaceListView.as_view(http_method_names=['get'])),
     path('api/event-requests/', EventRequestView.as_view(http_method_names=['post', 'put'])),
     path('api/event-requests/<int:id>', EventRequestView.as_view(http_method_names=['delete'])),
     path('api/event-requests/places/', EventRequestPlaceView.as_view(http_method_names=['post', 'delete'])),
