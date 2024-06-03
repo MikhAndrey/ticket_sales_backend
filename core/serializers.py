@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback, \
-    Photo, Video
+    Photo, Video, EventRequest, EventRequestPlace
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -131,6 +131,64 @@ class EventVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
         fields = ['id', 'link', 'event_id']
+
+
+class EventRequestPlaceSerializer(serializers.ModelSerializer):
+    place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.all())
+    place_id.default_error_messages['does_not_exist'] = 'Place was not found'
+
+    class Meta:
+        model = EventRequestPlace
+        fields = ['place_id', 'price']
+
+
+class EventRequestPlaceGetSerializer(serializers.ModelSerializer):
+    place = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventRequestPlace
+        fields = ['id', 'place', 'price']
+
+    def get_place(self, obj: EventRequestPlace):
+        return PlaceGetSerializer(obj.place).data
+
+
+class EventRequestCreateSerializer(serializers.ModelSerializer):
+    event_id = serializers.PrimaryKeyRelatedField(source='event', queryset=Event.objects.all())
+    event_id.default_error_messages['does_not_exist'] = 'Event was not found'
+
+    places = EventRequestPlaceSerializer(many=True)
+
+    class Meta:
+        model = EventRequest
+        fields = ['event_id', 'places']
+
+    def create(self, validated_data):
+        places_data = validated_data.pop('places')
+        event_request = EventRequest.objects.create(**validated_data)
+        for place_data in places_data:
+            place_data['event_request'] = event_request
+            EventRequestPlace.objects.create(**place_data)
+        return event_request
+
+
+class EventRequestGetSerializer(serializers.ModelSerializer):
+    places = serializers.SerializerMethodField()
+    event = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventRequest
+        fields = ['id', 'status', 'event', 'places']
+
+    def get_event(self, obj: EventRequest):
+        return {
+            'id': obj.event_id,
+            'name': obj.event.name,
+        }
+
+    def get_places(self, obj: EventRequest):
+        places = EventRequestPlace.objects.filter(event_request=obj)
+        return EventRequestPlaceGetSerializer(places, many=True).data
 
 
 class PromotionGetSerializer(serializers.ModelSerializer):

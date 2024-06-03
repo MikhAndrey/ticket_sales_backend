@@ -61,6 +61,21 @@ class CanDeleteEvent(BasePermission):
         return request.user.has_perm('delete_event')
 
 
+class CanAddEventRequest(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('add_eventrequest')
+
+
+class CanChangeEventRequest(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('change_eventrequest')
+
+
+class CanDeleteEventRequest(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('delete_eventrequest')
+
+
 class CanAddPhoto(BasePermission):
     def has_permission(self, request, view):
         return request.user.has_perm('add_photo')

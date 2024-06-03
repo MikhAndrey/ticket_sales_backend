@@ -120,6 +120,14 @@ class EventRequest(models.Model):
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='in_review')
 
 
+class EventRequestPlace(models.Model):
+    class Meta:
+        unique_together = (('event_request', 'place'),)
+    event_request = models.ForeignKey(EventRequest, on_delete=models.CASCADE)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE)
+    price = models.FloatField()
+
+
 class Feedback(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)

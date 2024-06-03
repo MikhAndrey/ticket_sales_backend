@@ -14,13 +14,15 @@ from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, 
     CanDeleteHall, \
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
     CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent, CanAddPhoto, CanDeletePhoto, \
-    CanAddVideo, CanDeleteVideo
-from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video, User
+    CanAddVideo, CanDeleteVideo, CanAddEventRequest, CanDeleteEventRequest
+from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video, User, \
+    EventRequest
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
     EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
-    FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer, UserGetSerializer
+    FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer, UserGetSerializer, \
+    EventRequestCreateSerializer, EventRequestGetSerializer
 from ticket_sales_backend import settings
 
 
@@ -506,6 +508,35 @@ class EventVideoView(APIView):
             video.delete()
 
         response = Response(message="Event video was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class EventRequestView(APIView):
+    @permission_classes([CanAddEventRequest])
+    def post(self, request):
+        data = request.data
+        serializer = EventRequestCreateSerializer(data=data)
+        if serializer.is_valid():
+            with transaction.atomic():
+                event_request = serializer.save()
+            serializer = EventRequestGetSerializer(event_request)
+            response = Response(model=serializer.data, message="Event request was created successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeleteEventRequest])
+    def delete(self, request, id):
+        try:
+            event_request = EventRequest.objects.get(id=id)
+        except EventRequest.DoesNotExist:
+            response = Response(errors="Event request was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        event_request.delete()
+
+        response = Response(message="Event request was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 
