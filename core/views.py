@@ -559,6 +559,28 @@ class EventRequestView(APIView):
         return JsonResponse(response.to_dict(), status=204)
 
 
+class EventRequestPlaceListView(APIView):
+    def get(self, request, event_request_id):
+        event_request_places = EventRequestPlace.objects.filter(event_request_id=event_request_id).order_by("id")
+
+        page_number = request.query_params.get("pageNumber")
+        per_page = request.query_params.get("pageSize")
+        paginator = Paginator(event_request_places, per_page)
+        try:
+            page_obj = paginator.page(page_number)
+        except:
+            page_obj = paginator.page(1)
+        serializer = EventRequestPlaceGetSerializer(page_obj.object_list, many=True)
+
+        response = PageResponse(
+            model=serializer.data,
+            message="Page of places for event request was retrieved successfully",
+            page_obj=page_obj,
+            paginator=paginator
+        )
+        return JsonResponse(response.to_dict(), status=200)
+
+
 class EventRequestPlaceView(APIView):
     @permission_classes([CanAddEventRequestPlace])
     def post(self, request):
