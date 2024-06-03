@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 
+from core.models import EventRequest
 
 class CanAddStadium(BasePermission):
     def has_permission(self, request, view):
@@ -119,3 +120,13 @@ class CanAddPromotionEvent(BasePermission):
 class CanDeletePromotionEvent(BasePermission):
     def has_permission(self, request, view):
         return request.user.has_perm('delete_promotionevent')
+
+
+class CanApproveEventRequest(BasePermission):
+    def has_permission(self, request, view):
+        try:
+            event_request = EventRequest.objects.get(id=request.data['id'])
+            stadium_admin = event_request.event.hall.stadium.user
+            return request.user == stadium_admin or request.user.is_superuser
+        except EventRequest.DoesNotExist:
+            return False

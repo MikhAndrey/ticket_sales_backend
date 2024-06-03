@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback, \
-    Photo, Video, EventRequest, EventRequestPlace
+    Photo, Video, EventRequest, EventRequestPlace, EventPlace
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -170,6 +170,31 @@ class EventRequestCreateSerializer(serializers.ModelSerializer):
             place_data['event_request'] = event_request
             EventRequestPlace.objects.create(**place_data)
         return event_request
+
+
+class EventRequestUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventRequest
+        fields = ['id', 'status']
+
+    def update(self, instance, validated_data):
+        previous_status = instance.status
+        if previous_status != 'in_review':
+            raise serializers.ValidationError("This request has already been approved or rejected")
+
+        instance = super().update(instance, validated_data)
+
+        if previous_status != 'approved' and instance.status == 'approved':
+            event_request_places = EventRequestPlace.objects.filter(event_request_id=instance.id)
+            for request_place in event_request_places:
+                EventPlace.objects.create(
+                    event=instance.event,
+                    place=request_place.place,
+                    price=request_place.price,
+                    purchase=None
+                )
+
+        return instance
 
 
 class EventRequestGetSerializer(serializers.ModelSerializer):
