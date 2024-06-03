@@ -667,6 +667,34 @@ class EventRequestPlaceView(APIView):
         return JsonResponse(response.to_dict(), status=204)
 
 
+class PurchaseCartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        booked_purchases = Purchase.objects.filter(user=request.user, status='booked').order_by('-id')
+        serializer = PurchaseDetailsSerializer(booked_purchases, many=True)
+
+        response = Response(
+            model=serializer.data,
+            message="Purchases cart data was retrieved successfully"
+        )
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class PurchaseHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        confirmed_purchases = Purchase.objects.filter(user=request.user, status='purchased').order_by('-id')
+        serializer = PurchaseDetailsSerializer(confirmed_purchases, many=True)
+
+        response = Response(
+            model=serializer.data,
+            message="Purchases history data was retrieved successfully"
+        )
+        return JsonResponse(response.to_dict(), status=200)
+
+
 class PurchaseView(APIView):
     permission_classes = [IsAuthenticated]
 
