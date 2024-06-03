@@ -216,6 +216,15 @@ class EventRequestGetSerializer(serializers.ModelSerializer):
         return EventRequestPlaceGetSerializer(places, many=True).data
 
 
+class EventRequestPlaceCreateSerializer(serializers.ModelSerializer):
+    place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.all())
+    place_id.default_error_messages['does_not_exist'] = 'Place was not found'
+
+    class Meta:
+        model = EventRequestPlace
+        fields = ['place_id', 'price']
+
+
 class PromotionGetSerializer(serializers.ModelSerializer):
     events = serializers.SerializerMethodField()
 

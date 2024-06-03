@@ -14,15 +14,17 @@ from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, 
     CanDeleteHall, \
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
     CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent, CanAddPhoto, CanDeletePhoto, \
-    CanAddVideo, CanDeleteVideo, CanAddEventRequest, CanDeleteEventRequest, CanApproveEventRequest
+    CanAddVideo, CanDeleteVideo, CanAddEventRequest, CanDeleteEventRequest, CanApproveEventRequest, \
+    CanAddEventRequestPlace, CanDeleteEventRequestPlace
 from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video, User, \
-    EventRequest
+    EventRequest, EventRequestPlace
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
     EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
     FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer, UserGetSerializer, \
-    EventRequestCreateSerializer, EventRequestGetSerializer, EventRequestUpdateSerializer
+    EventRequestCreateSerializer, EventRequestGetSerializer, EventRequestUpdateSerializer, \
+    EventRequestPlaceCreateSerializer, EventRequestPlaceGetSerializer
 from ticket_sales_backend import settings
 
 
@@ -256,8 +258,8 @@ class PlaceView(APIView):
         if serializer.is_valid():
             with transaction.atomic():
                 places = serializer.save()
-                serializer = PlaceGetSerializer(places, many=True)
 
+            serializer = PlaceGetSerializer(places, many=True)
             response = Response(model=serializer.data, message="Places were added successfully")
             return JsonResponse(response.to_dict(), status=201)
 
@@ -554,6 +556,39 @@ class EventRequestView(APIView):
         event_request.delete()
 
         response = Response(message="Event request was deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class EventRequestPlaceView(APIView):
+    @permission_classes([CanAddEventRequestPlace])
+    def post(self, request):
+        data = request.data
+        serializer = EventRequestPlaceCreateSerializer(data=data['places'], many=True)
+        if serializer.is_valid():
+            for event_request_place in serializer.validated_data:
+                event_request_place['event_request_id'] = data['event_request_id']
+
+            with transaction.atomic():
+                event_request_places = serializer.save()
+
+            serializer = EventRequestPlaceGetSerializer(event_request_places, many=True)
+            response = Response(model=serializer.data, message="Places for event request were added successfully")
+            return JsonResponse(response.to_dict(), status=201)
+
+        response = Response(errors=serializer.errors)
+        return JsonResponse(response.to_dict(), status=400)
+
+    @permission_classes([CanDeleteEventRequestPlace])
+    def delete(self, request):
+        try:
+            event_request_places = EventRequestPlace.objects.filter(id__in=request.data['ids'])
+        except EventRequestPlace.DoesNotExist:
+            response = Response(errors="Event request place was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        event_request_places.delete()
+
+        response = Response(message="Required places for event request were deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 
