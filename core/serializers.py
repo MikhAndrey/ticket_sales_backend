@@ -211,7 +211,7 @@ class EventRequestUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
-class EventRequestGetSerializer(serializers.ModelSerializer):
+class EventRequestDetailsSerializer(serializers.ModelSerializer):
     places = serializers.SerializerMethodField()
     event = serializers.SerializerMethodField()
 
@@ -228,6 +228,48 @@ class EventRequestGetSerializer(serializers.ModelSerializer):
     def get_places(self, obj: EventRequest):
         places = EventRequestPlace.objects.filter(event_request=obj)
         return EventRequestPlaceGetSerializer(places, many=True).data
+
+
+class EventRequestGetSerializer(serializers.ModelSerializer):
+    event = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventRequest
+        fields = ['id', 'status', 'event']
+
+    def get_event(self, obj: EventRequest):
+        return {
+            'id': obj.event_id,
+            'name': obj.event.name,
+        }
+
+
+class EventRequestStadiumGetSerializer(serializers.ModelSerializer):
+    event = serializers.SerializerMethodField()
+    hall = serializers.SerializerMethodField()
+    stadium = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventRequest
+        fields = ['id', 'status', 'event', 'hall', 'stadium']
+
+    def get_event(self, obj: EventRequest):
+        return {
+            'id': obj.event_id,
+            'name': obj.event.name,
+        }
+
+    def get_hall(self, obj: EventRequest):
+        return {
+            'id': obj.event.hall.id,
+            'name': obj.event.hall.name,
+        }
+
+    def get_stadium(self, obj: EventRequest):
+        return {
+            'id': obj.event.hall.stadium.id,
+            'name': obj.event.hall.stadium.name,
+        }
 
 
 class EventRequestPlaceCreateSerializer(serializers.ModelSerializer):

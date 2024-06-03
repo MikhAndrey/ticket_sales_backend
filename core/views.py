@@ -15,7 +15,7 @@ from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, 
     CanAddPlace, CanChangePlace, CanDeletePlace, CanAddEvent, CanChangeEvent, CanDeleteEvent, CanAddPromotion, \
     CanChangePromotion, CanDeletePromotion, CanAddPromotionEvent, CanDeletePromotionEvent, CanAddPhoto, CanDeletePhoto, \
     CanAddVideo, CanDeleteVideo, CanAddEventRequest, CanDeleteEventRequest, CanApproveEventRequest, \
-    CanAddEventRequestPlace, CanDeleteEventRequestPlace
+    CanAddEventRequestPlace, CanDeleteEventRequestPlace, CanViewEventRequest
 from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video, User, \
     EventRequest, EventRequestPlace, EventPlace
 from core.response import Response, PageResponse
@@ -23,8 +23,9 @@ from core.serializers import CitySerializer, UserRegistrationSerializer, Stadium
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
     EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
     FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer, UserGetSerializer, \
-    EventRequestCreateSerializer, EventRequestGetSerializer, EventRequestUpdateSerializer, \
-    EventRequestPlaceCreateSerializer, EventRequestPlaceGetSerializer, EventPlaceGetSerializer
+    EventRequestCreateSerializer, EventRequestDetailsSerializer, EventRequestUpdateSerializer, \
+    EventRequestPlaceCreateSerializer, EventRequestPlaceGetSerializer, EventPlaceGetSerializer, \
+    EventRequestGetSerializer, EventRequestStadiumGetSerializer
 from ticket_sales_backend import settings
 
 
@@ -521,7 +522,7 @@ class EventRequestView(APIView):
         if serializer.is_valid():
             with transaction.atomic():
                 event_request = serializer.save()
-            serializer = EventRequestGetSerializer(event_request)
+            serializer = EventRequestDetailsSerializer(event_request)
             response = Response(model=serializer.data, message="Event request was created successfully")
             return JsonResponse(response.to_dict(), status=201)
 
@@ -601,6 +602,34 @@ class EventRequestPlaceListView(APIView):
             message="Page of places for event request was retrieved successfully",
             page_obj=page_obj,
             paginator=paginator
+        )
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class EventRequestUserListView(APIView):
+    permission_classes = [CanViewEventRequest]
+
+    def get(self, request):
+        event_requests = EventRequest.objects.filter(event__user=request.user).order_by('-id')
+        serializer = EventRequestGetSerializer(event_requests, many=True)
+
+        response = Response(
+            model=serializer.data,
+            message="Event requests of current user were retrieved successfully"
+        )
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class EventRequestStadiumListView(APIView):
+    permission_classes = [CanViewEventRequest]
+
+    def get(self, request):
+        event_requests = EventRequest.objects.filter(event__hall__stadium__user=request.user).order_by('-id')
+        serializer = EventRequestStadiumGetSerializer(event_requests, many=True)
+
+        response = Response(
+            model=serializer.data,
+            message="Event requests for current user were retrieved successfully"
         )
         return JsonResponse(response.to_dict(), status=200)
 
