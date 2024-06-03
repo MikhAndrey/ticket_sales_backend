@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Group
+from django.utils import timezone
 from rest_framework import serializers
 
 from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback, \
@@ -143,17 +144,51 @@ class EventRequestPlaceSerializer(serializers.ModelSerializer):
 
 
 class EventPlaceGetSerializer(serializers.ModelSerializer):
-    purchase_id = serializers.PrimaryKeyRelatedField(source='purchase', queryset=Purchase.objects.all())
-    purchase_id.default_error_messages['does_not_exist'] = 'Place was not found'
-
+    purchase = serializers.SerializerMethodField()
     place = serializers.SerializerMethodField()
 
     class Meta:
         model = EventPlace
-        fields = ['id', 'place', 'price', 'purchase_id']
+        fields = ['id', 'place', 'price', 'purchase']
 
     def get_place(self, obj: EventPlace):
         return PlaceGetSerializer(obj.place).data
+
+    def get_purchase(self, obj: EventPlace):
+        return PurchaseGetSerializer(obj.purchase).data
+
+
+class EventPlaceDetailsSerializer(serializers.ModelSerializer):
+    place = serializers.SerializerMethodField()
+    event = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventPlace
+        fields = ['id', 'place', 'event']
+
+    def get_place(self, obj: EventPlace):
+        return PlaceGetSerializer(obj.place).data
+
+    def get_event(self, obj: EventPlace):
+        return EventGetSerializer(obj.event).data
+
+
+class PurchaseGetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Purchase
+        fields = ['id', 'date', 'status']
+
+
+class PurchaseDetailsSerializer(serializers.ModelSerializer):
+    places = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Purchase
+        fields = ['id', 'date', 'status', 'places']
+
+    def get_places(self, obj: Purchase):
+        places = EventPlace.objects.filter(purchase=obj)
+        return EventPlaceDetailsSerializer(places, many=True).data
 
 
 class EventRequestPlaceGetSerializer(serializers.ModelSerializer):

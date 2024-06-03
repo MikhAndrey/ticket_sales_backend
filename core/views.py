@@ -17,7 +17,7 @@ from core.permissions import CanAddStadium, CanChangeStadium, CanDeleteStadium, 
     CanAddVideo, CanDeleteVideo, CanAddEventRequest, CanDeleteEventRequest, CanApproveEventRequest, \
     CanAddEventRequestPlace, CanDeleteEventRequestPlace, CanViewEventRequest
 from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, PromotionEvent, Photo, Video, User, \
-    EventRequest, EventRequestPlace, EventPlace
+    EventRequest, EventRequestPlace, EventPlace, Purchase
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
     HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
@@ -25,7 +25,7 @@ from core.serializers import CitySerializer, UserRegistrationSerializer, Stadium
     FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer, UserGetSerializer, \
     EventRequestCreateSerializer, EventRequestDetailsSerializer, EventRequestUpdateSerializer, \
     EventRequestPlaceCreateSerializer, EventRequestPlaceGetSerializer, EventPlaceGetSerializer, \
-    EventRequestGetSerializer, EventRequestStadiumGetSerializer
+    EventRequestGetSerializer, EventRequestStadiumGetSerializer, PurchaseDetailsSerializer, PurchaseGetSerializer
 from ticket_sales_backend import settings
 
 
@@ -664,6 +664,57 @@ class EventRequestPlaceView(APIView):
         event_request_places.delete()
 
         response = Response(message="Required places for event request were deleted successfully")
+        return JsonResponse(response.to_dict(), status=204)
+
+
+class PurchaseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            event_places = EventPlace.objects.filter(id__in=request.data['event_place_ids'])
+        except EventPlace.DoesNotExist:
+            response = Response(errors="Event place was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        with transaction.atomic():
+            purchase = Purchase.objects.create(date=timezone.now(), user=request.user)
+            purchase.save()
+
+            for event_place in event_places:
+                event_place.purchase = purchase
+                event_place.save()
+
+        serializer = PurchaseDetailsSerializer(purchase)
+        response = Response(model=serializer.data, message="You have booked tickets successfully")
+        return JsonResponse(response.to_dict(), status=201)
+
+    def put(self, request):
+        try:
+            purchases = Purchase.objects.filter(id__in=request.data['purchase_ids'])
+        except Purchase.DoesNotExist:
+            response = Response(errors="Purchase was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        with transaction.atomic():
+            for purchase in purchases:
+                purchase.status = 'purchased'
+                purchase.save()
+
+        serializer = PurchaseGetSerializer(purchases, many=True)
+        response = Response(model=serializer.data, message="Purchases were saved successfully")
+        return JsonResponse(response.to_dict(), status=201)
+
+    def delete(self, request, id):
+        try:
+            purchase = Purchase.objects.filter(id=id)
+        except Purchase.DoesNotExist:
+            response = Response(errors="Purchase was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        purchase.delete()
+
+        response = Response(message="Your purchase was deleted successfully")
         return JsonResponse(response.to_dict(), status=204)
 
 
