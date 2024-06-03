@@ -15,7 +15,7 @@ class ChatListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user_chats = Chat.objects.filter(chatmember__user=request.user).distinct()
+        user_chats = Chat.objects.filter(chatmember__user=request.user).order_by('-last_message__date').distinct()
 
         page_number = request.query_params.get("pageNumber")
         per_page = request.query_params.get("pageSize")
@@ -82,7 +82,7 @@ class ChatMessageView(APIView):
             message = serializer.save()
             serializer = ChatMessageGetSerializer(message)
 
-            send_message('message.send', serializer.data, serializer.data['chat']['chat_id'])
+            send_message('message.send', serializer.data, serializer.data['info']['chat_id'])
 
             response = Response(model=serializer.data, message="Message was created successfully")
             return JsonResponse(response.to_dict(), status=200)
@@ -102,7 +102,7 @@ class ChatMessageView(APIView):
             message = serializer.save()
             serializer = ChatMessageGetSerializer(message)
 
-            send_message('message.update', serializer.data, serializer.data['chat']['chat_id'])
+            send_message('message.update', serializer.data, serializer.data['info']['chat_id'])
 
             response = Response(model=serializer.data, message="Message info was updated successfully")
             return JsonResponse(response.to_dict(), status=200)

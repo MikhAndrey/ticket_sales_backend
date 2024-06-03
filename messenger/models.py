@@ -4,11 +4,11 @@ from core.models import User
 
 
 class Chat(models.Model):
-    pass
+    last_message = models.ForeignKey('ChatMessage', on_delete=models.SET_NULL, null=True, blank=True)
 
-    @property
-    def last_message(self):
-        return ChatMessage.objects.filter(chat_member__chat=self).order_by('-date').first()
+    def update_last_message(self, message):
+        self.last_message = message
+        self.save()
 
 
 class ChatMember(models.Model):
@@ -21,3 +21,13 @@ class ChatMessage(models.Model):
     chat_member = models.ForeignKey(ChatMember, on_delete=models.CASCADE)
     text = models.CharField(max_length=500)
     date = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.chat_member.chat.update_last_message(self)
+
+    def delete(self, *args, **kwargs):
+        chat = self.chat_member.chat
+        super().delete(*args, **kwargs)
+        last_message = ChatMessage.objects.filter(chat_member__chat=chat).order_by('-id').first()
+        chat.update_last_message(last_message)
