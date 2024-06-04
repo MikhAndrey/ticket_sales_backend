@@ -1,5 +1,4 @@
 from django.contrib.auth.models import Group
-from django.utils import timezone
 from rest_framework import serializers
 
 from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback, \
@@ -65,7 +64,7 @@ class PlaceSerializer(serializers.ModelSerializer):
         fields = ['id', 'sector', 'row', 'seat', 'x_offset', 'y_offset', 'hall_id']
 
 
-class EventAnnouncementSerializer(serializers.ModelSerializer):
+class EventListSerializer(serializers.ModelSerializer):
     hall = serializers.SerializerMethodField()
     stadium = serializers.SerializerMethodField()
 

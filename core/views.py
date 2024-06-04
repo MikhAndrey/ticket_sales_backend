@@ -20,7 +20,7 @@ from core.models import City, Stadium, Hall, Place, Event, Promotion, Feedback, 
     EventRequest, EventRequestPlace, EventPlace, Purchase
 from core.response import Response, PageResponse
 from core.serializers import CitySerializer, UserRegistrationSerializer, StadiumSerializer, StadiumGetSerializer, \
-    HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventAnnouncementSerializer, \
+    HallSerializer, HallGetSerializer, PlaceGetSerializer, PlaceSerializer, EventListSerializer, \
     EventGetSerializer, EventSerializer, PromotionSerializer, PromotionGetSerializer, PromotionEventSerializer, \
     FeedbackGetSerializer, FeedbackSerializer, EventPhotoSerializer, EventVideoSerializer, UserGetSerializer, \
     EventRequestCreateSerializer, EventRequestDetailsSerializer, EventRequestUpdateSerializer, \
@@ -43,8 +43,8 @@ class CityListView(APIView):
 class StadiumListView(APIView):
     def get(self, request):
         query_filter = {
-            'name': request.query_params.get('name') or "",
-            'address': request.query_params.get('address') or ""
+            'name': request.query_params.get('name', ''),
+            'address': request.query_params.get('address', '')
         }
 
         stadiums = Stadium.objects.all().filter(
@@ -233,8 +233,8 @@ class PlaceListView(APIView):
     def get(self, request, hall_id):
         places = Place.objects.filter(hall_id=hall_id).order_by("id")
 
-        page_number = request.query_params.get("pageNumber")
-        per_page = request.query_params.get("pageSize")
+        page_number = request.query_params.get("page_number")
+        per_page = request.query_params.get("page_size")
         paginator = Paginator(places, per_page)
         try:
             page_obj = paginator.page(page_number)
@@ -380,7 +380,41 @@ class EventAnnouncementView(APIView):
             return JsonResponse(response.to_dict(), status=400)
         now = timezone.now()
         events = Event.objects.filter(hall__stadium__city_id=city_id, start_date__gt=now).order_by('start_date')
-        serializer = EventAnnouncementSerializer(events, many=True)
+        serializer = EventListSerializer(events, many=True)
+
+        response = Response(model=serializer.data, message="The announcement of events was retrieved successfully")
+        return JsonResponse(response.to_dict(), status=200)
+
+
+class EventCatalogView(APIView):
+    def get(self, request):
+        query_filter = {
+            'stadium_ids': request.query_params.getlist('stadium_ids', []),
+            'start_date_from': request.query_params.get('start_date_from'),
+            'start_date_to': request.query_params.get('start_date_to'),
+            'end_date_from': request.query_params.get('end_date_from'),
+            'end_date_to': request.query_params.get('end_date_to'),
+            'name': request.query_params.get('name', '')
+        }
+
+        events = Event.objects.filter(
+            hall__stadium_id__in=query_filter['stadium_ids'],
+            start_date__gt=query_filter['start_date_from'],
+            start_date__lt=query_filter['start_date_to'],
+            end_date__gt=query_filter['end_date_from'],
+            end_date__lt=query_filter['end_date_to'],
+            name__icontains=query_filter['name']
+        )
+
+        page_number = request.query_params.get("page_number")
+        per_page = request.query_params.get("page_size")
+        paginator = Paginator(events, per_page)
+        try:
+            page_obj = paginator.page(page_number)
+        except:
+            page_obj = paginator.page(1)
+
+        serializer = EventListSerializer(page_obj.object_list, many=True)
 
         response = Response(model=serializer.data, message="The list of events was retrieved successfully")
         return JsonResponse(response.to_dict(), status=200)
@@ -564,8 +598,8 @@ class EventPlaceListView(APIView):
     def get(self, request, event_id):
         event_places = EventPlace.objects.filter(event_id=event_id).order_by("id")
 
-        page_number = request.query_params.get("pageNumber")
-        per_page = request.query_params.get("pageSize")
+        page_number = request.query_params.get("page_number")
+        per_page = request.query_params.get("page_size")
         paginator = Paginator(event_places, per_page)
         try:
             page_obj = paginator.page(page_number)
@@ -587,8 +621,8 @@ class EventRequestPlaceListView(APIView):
     def get(self, request, event_request_id):
         event_request_places = EventRequestPlace.objects.filter(event_request_id=event_request_id).order_by("id")
 
-        page_number = request.query_params.get("pageNumber")
-        per_page = request.query_params.get("pageSize")
+        page_number = request.query_params.get("page_number")
+        per_page = request.query_params.get("page_size")
         paginator = Paginator(event_request_places, per_page)
         try:
             page_obj = paginator.page(page_number)
@@ -921,13 +955,13 @@ class FeedbackView(APIView):
 class UserListView(APIView):
     def get(self, request):
         query_filter = {
-            'login': request.query_params.get('login') or "",
+            'login': request.query_params.get('login', ''),
         }
 
         users = User.objects.all().filter(login__icontains=query_filter['login'])
 
-        page_number = request.query_params.get("pageNumber")
-        per_page = request.query_params.get("pageSize")
+        page_number = request.query_params.get("page_number")
+        per_page = request.query_params.get("page_size")
         paginator = Paginator(users, per_page)
         try:
             page_obj = paginator.page(page_number)

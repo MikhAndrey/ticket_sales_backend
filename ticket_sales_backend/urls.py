@@ -22,7 +22,8 @@ from core.views import CityListView, UserRegistrationView, StadiumView, StadiumL
     PlaceListView, PlaceView, EventView, PromotionView, FeedbackView, FeedbackListView, PromotionEventView, \
     EventPhotoView, EventPhotoListView, StadiumPhotoView, EventVideoListView, EventVideoView, UserListView, \
     EventRequestView, EventRequestPlaceView, EventRequestPlaceListView, EventPlaceListView, EventRequestUserListView, \
-    EventRequestStadiumListView, PurchaseView, PurchaseCartView, PurchaseHistoryView
+    EventRequestStadiumListView, PurchaseView, PurchaseCartView, PurchaseHistoryView, EventAnnouncementView, \
+    EventCatalogView
 from messenger.views import ChatMessageView, ChatMessageListView, ChatListView
 
 urlpatterns = [
@@ -43,6 +44,8 @@ urlpatterns = [
     path('api/places/', PlaceView.as_view(http_method_names=['post', 'put', 'delete'])),
     path('api/events/', EventView.as_view(http_method_names=['post'])),
     path('api/events/<int:id>', EventView.as_view(http_method_names=['put', 'delete', 'get'])),
+    path('api/events/announcement/', EventAnnouncementView.as_view(http_method_names=['get'])),
+    path('api/events/catalog/', EventCatalogView.as_view(http_method_names=['get'])),
     path('api/events/photos/list/<int:event_id>', EventPhotoListView.as_view(http_method_names=['get'])),
     path('api/events/photos/', EventPhotoView.as_view(http_method_names=['post'])),
     path('api/events/photos/<int:id>', EventPhotoView.as_view(http_method_names=['delete'])),
