@@ -109,6 +109,14 @@ class EventPlace(models.Model):
     price = models.FloatField()
     purchase = models.ForeignKey(Purchase, on_delete=models.SET_NULL, null=True)
 
+    @property
+    def discounted_price(self):
+        discounts = Promotion.objects.filter(promotionevent__event=self.event).values('discount')
+        price = self.price
+        for discount in discounts:
+            price *= (1 - discount['discount'] / 100)
+        return price
+
 
 class EventRequest(models.Model):
     STATUS_CHOICES = (

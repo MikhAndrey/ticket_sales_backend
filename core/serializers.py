@@ -148,7 +148,7 @@ class EventPlaceGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EventPlace
-        fields = ['id', 'place', 'price', 'purchase']
+        fields = ['id', 'place', 'discounted_price', 'purchase']
 
     def get_place(self, obj: EventPlace):
         return PlaceGetSerializer(obj.place).data
@@ -163,7 +163,7 @@ class EventPlaceDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EventPlace
-        fields = ['id', 'place', 'event']
+        fields = ['id', 'place', 'discounted_price', 'event']
 
     def get_place(self, obj: EventPlace):
         return PlaceGetSerializer(obj.place).data
