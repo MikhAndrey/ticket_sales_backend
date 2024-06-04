@@ -27,6 +27,7 @@ from core.serializers import CitySerializer, UserRegistrationSerializer, Stadium
     EventRequestPlaceCreateSerializer, EventRequestPlaceGetSerializer, EventPlaceGetSerializer, \
     EventRequestGetSerializer, EventRequestStadiumGetSerializer, PurchaseDetailsSerializer, PurchaseGetSerializer
 from ticket_sales_backend import settings
+from ticket_sales_backend.settings import MAX_EVENT_PHOTOS
 
 
 class CityListView(APIView):
@@ -439,6 +440,12 @@ class EventPhotoView(APIView):
         try:
             event_id = request.query_params['event_id']
             event = Event.objects.get(id=event_id)
+
+            photos = Photo.objects.filter(event=event)
+            if len(photos) >= MAX_EVENT_PHOTOS:
+                response = Response(errors=f"You can't upload more than {MAX_EVENT_PHOTOS} for one event")
+                return JsonResponse(response.to_dict(), status=400)
+
         except Event.DoesNotExist:
             response = Response(errors="Event was not found")
             return JsonResponse(response.to_dict(), status=400)
@@ -452,7 +459,6 @@ class EventPhotoView(APIView):
             if serializer.is_valid():
                 with transaction.atomic():
                     photo = serializer.save()
-                    photos = Photo.objects.filter(event=event)
                     if len(photos) == 1:
                         event.photo_link = photo.link
                         event.save()
@@ -913,7 +919,7 @@ class FeedbackView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = FeedbackSerializer(data=request.data)
+        serializer = FeedbackSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             feedback = serializer.save(user=request.user, date=timezone.now())
             serializer = FeedbackGetSerializer(feedback)

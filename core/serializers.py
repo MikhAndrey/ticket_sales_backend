@@ -367,6 +367,11 @@ class FeedbackSerializer(serializers.ModelSerializer):
         model = Feedback
         fields = ['id', 'text', 'mark', 'event_id']
 
+    def validate(self, data):
+        if not EventPlace.objects.filter(event_id=data['event_id'], purchase__user=self.context['user']).exists():
+            raise serializers.ValidationError("You need to buy tickets for this event before leaving a feedback")
+        return data
+
 
 class UserGetSerializer(serializers.ModelSerializer):
     class Meta:
