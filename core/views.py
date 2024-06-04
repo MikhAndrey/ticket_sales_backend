@@ -786,19 +786,21 @@ class PurchaseView(APIView):
         return JsonResponse(response.to_dict(), status=204)
 
 
-class PromotionView(APIView):
-    def get(self, request, id):
+class PromotionListView(APIView):
+    def get(self, request, event_id):
         try:
-            promotion = Promotion.objects.get(id=id)
+            promotions = Promotion.objects.filter(promotionevent__event_id=event_id)
         except Promotion.DoesNotExist:
             response = Response(errors="Promotion was not found")
             return JsonResponse(response.to_dict(), status=400)
 
-        serializer = PromotionGetSerializer(promotion)
+        serializer = PromotionGetSerializer(promotions, many=True)
 
-        response = Response(model=serializer.data, message="Promotion info was retrieved successfully")
+        response = Response(model=serializer.data, message="Promotions for event were retrieved successfully")
         return JsonResponse(response.to_dict(), status=200)
 
+
+class PromotionView(APIView):
     @permission_classes([CanAddPromotion])
     def post(self, request):
         data = request.data
@@ -813,6 +815,10 @@ class PromotionView(APIView):
                 try:
                     events = Event.objects.filter(id__in=event_ids)
                     for event in events:
+                        if event.user != request.user:
+                            response = Response(errors="You can create a promotion only for your events")
+                            return JsonResponse(response.to_dict(), status=400)
+
                         promotion_event_serializer = PromotionEventSerializer(data={
                             "event": event.id,
                             "promotion": promotion.id
@@ -843,6 +849,10 @@ class PromotionView(APIView):
             response = Response(errors="Promotion was not found")
             return JsonResponse(response.to_dict(), status=400)
 
+        if promotion.promotionevent_set.exclude(event__user=request.user).exists():
+            response = Response(errors="You can edit a promotion only for your events")
+            return JsonResponse(response.to_dict(), status=400)
+
         data = request.data
         serializer = PromotionSerializer(promotion, data={
             "start_date": data["start_date"],
@@ -866,6 +876,10 @@ class PromotionView(APIView):
             response = Response(errors="Promotion was not found")
             return JsonResponse(response.to_dict(), status=400)
 
+        if promotion.promotionevent_set.exclude(event__user=request.user).exists():
+            response = Response(errors="You can delete a promotion only for your events")
+            return JsonResponse(response.to_dict(), status=400)
+
         promotion.delete()
 
         response = Response(message="Promotion was deleted successfully")
@@ -875,7 +889,7 @@ class PromotionView(APIView):
 class PromotionEventView(APIView):
     @permission_classes([CanAddPromotionEvent])
     def post(self, request):
-        serializer = PromotionEventSerializer(data=request.data)
+        serializer = PromotionEventSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             promotion_event = serializer.save()
             serializer = PromotionGetSerializer(promotion_event.promotion)
@@ -894,6 +908,10 @@ class PromotionEventView(APIView):
                 promotion_id=request.query_params["promotion_id"])
         except PromotionEvent.DoesNotExist:
             response = Response(errors="Promotion for this event was not found")
+            return JsonResponse(response.to_dict(), status=400)
+
+        if promotion_event.event.user != request.user:
+            response = Response(errors="You can delete a promotion only for your events")
             return JsonResponse(response.to_dict(), status=400)
 
         promotion_event.delete()

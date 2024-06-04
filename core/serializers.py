@@ -344,6 +344,12 @@ class PromotionEventSerializer(serializers.ModelSerializer):
         model = PromotionEvent
         fields = ["promotion_id", "event_id"]
 
+    def validate(self, data):
+        event = Event.objects.get(id=data['event_id'])
+        if event.user != self.context['request'].user:
+            raise serializers.ValidationError("You can add a promotion only for your events")
+        return data
+
 
 class FeedbackGetSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
