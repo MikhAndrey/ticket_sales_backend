@@ -211,6 +211,22 @@ class EventRequestCreateSerializer(serializers.ModelSerializer):
         model = EventRequest
         fields = ['event_id', 'places']
 
+    def validate(self, data):
+        event = Event.objects.get(id=data['event_id'])
+        coincide_dates_events = Event.objects.filter(
+            hall=event.hall,
+            start_date__lt=event.start_date,
+            end_date__gt=event.start_date
+        ) | Event.objects.filter(
+            hall=event.hall,
+            start_date__lt=event.end_date,
+            end_date__gt=event.end_date
+        )
+        if coincide_dates_events.exists():
+            raise serializers.ValidationError("You can't approve request for this event, because another event will "
+                                              "take place in this dates and in this hall")
+        return data
+
     def create(self, validated_data):
         places_data = validated_data.pop('places')
         event_request = EventRequest.objects.create(**validated_data)
