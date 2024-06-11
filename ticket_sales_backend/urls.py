@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -25,6 +26,7 @@ from core.views import CityListView, UserRegistrationView, StadiumView, StadiumL
     EventRequestStadiumListView, PurchaseView, PurchaseCartView, PurchaseHistoryView, EventAnnouncementView, \
     EventCatalogView, PromotionListView
 from messenger.views import ChatMessageView, ChatMessageListView, ChatListView
+from ticket_sales_backend import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -75,3 +77,6 @@ urlpatterns = [
     path('api/messages/<int:id>', ChatMessageView.as_view(http_method_names=['put', 'delete'])),
     path('api/messages/list/<int:chat_id>', ChatMessageListView.as_view(http_method_names=['get'])),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

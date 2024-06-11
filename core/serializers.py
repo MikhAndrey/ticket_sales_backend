@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from core.models import City, User, UserGroupRequest, Stadium, Hall, Place, Event, Promotion, PromotionEvent, Feedback, \
     Photo, Video, EventRequest, EventRequestPlace, EventPlace, Purchase
+from ticket_sales_backend import settings
 
 
 class CitySerializer(serializers.ModelSerializer):
@@ -67,6 +68,7 @@ class PlaceSerializer(serializers.ModelSerializer):
 class EventListSerializer(serializers.ModelSerializer):
     hall = serializers.SerializerMethodField()
     stadium = serializers.SerializerMethodField()
+    photo_link = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -83,6 +85,10 @@ class EventListSerializer(serializers.ModelSerializer):
             "id": obj.hall.stadium.id,
             "name": obj.hall.stadium.name
         }
+
+    def get_photo_link(self, obj: Event):
+        return (f'{self.context['request'].build_absolute_uri('/')}{settings.MEDIA_URL[1::]}'
+                f'{settings.MEDIA_FOLDERS['event']}/{obj.photo_link}') if obj.photo_link else None
 
 
 class EventGetSerializer(serializers.ModelSerializer):

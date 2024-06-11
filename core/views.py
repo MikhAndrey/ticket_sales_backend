@@ -131,7 +131,7 @@ class StadiumPhotoView(APIView):
 
         file = request.FILES.get('photo')
         if file:
-            file_path = handle_uploaded_file(file, 'stadiums')
+            file_path = handle_uploaded_file(file, settings.MEDIA_FOLDERS['stadium'])
             stadium.photo_link = file_path
             stadium.save()
 
@@ -381,7 +381,7 @@ class EventAnnouncementView(APIView):
             return JsonResponse(response.to_dict(), status=400)
         now = timezone.now()
         events = Event.objects.filter(hall__stadium__city_id=city_id, start_date__gt=now).order_by('start_date')
-        serializer = EventListSerializer(events, many=True)
+        serializer = EventListSerializer(events, many=True, context={'request': request})
 
         response = Response(model=serializer.data, message="The announcement of events was retrieved successfully")
         return JsonResponse(response.to_dict(), status=200)
@@ -415,7 +415,7 @@ class EventCatalogView(APIView):
         except:
             page_obj = paginator.page(1)
 
-        serializer = EventListSerializer(page_obj.object_list, many=True)
+        serializer = EventListSerializer(page_obj.object_list, many=True, context={'request': request})
 
         response = Response(model=serializer.data, message="The list of events was retrieved successfully")
         return JsonResponse(response.to_dict(), status=200)
@@ -452,7 +452,7 @@ class EventPhotoView(APIView):
 
         file = request.FILES.get('photo')
         if file:
-            file_path = handle_uploaded_file(file, 'events')
+            file_path = handle_uploaded_file(file, settings.MEDIA_FOLDERS['event'])
             data = {'link': file_path, 'event_id': event_id}
             serializer = EventPhotoSerializer(data=data)
 
